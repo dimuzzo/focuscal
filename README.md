@@ -1,61 +1,60 @@
 # FocusCal 🎯
 
-**Calendario adattivo personale** — sessione universitaria, visite mediche, allenamenti.
+**Personal adaptive calendar** — university exams, medical appointments, workouts.
 
 ## Privacy-first
 
-- ✅ Tutti i dati salvati **solo sul tuo dispositivo** (localStorage)
-- ✅ Zero server, zero database, zero condivisione
-- ✅ Funziona offline (PWA con Service Worker)
-- ✅ Installabile come app su iOS/Android/Desktop
+- ✅ All data saved **only on your device** (localStorage)
+- ✅ Zero servers, zero databases, zero sharing
+- ✅ Works offline (PWA with Service Worker)
+- ✅ Installable as an app on iOS/Android/Desktop
 
-## Deploy su GitHub Pages
+## Deploy on GitHub Pages
 
-1. **Crea un repository** su GitHub (es. `focuscal`)
-2. **Carica tutti i file** nella root del repo:
+1. **Create a repository** on GitHub (e.g., `focuscal`)
+2. **Upload all files** to the repo root:
    - `index.html`
    - `manifest.json`
    - `sw.js`
    - `icon-192.png`
    - `icon-512.png`
-3. **Vai su Settings → Pages** del repository
-4. Sotto "Source" seleziona `main` branch, root `/`
-5. Salva. In 1-2 minuti l'app è live su `https://tuousername.github.io/focuscal/`
+3. **Go to Settings → Pages** of the repository
+4. Under "Source" select `main` branch, root `/`
+5. Save. In 1-2 minutes the app is live at `https://dimuzzo.github.io/focuscal/`
 
-### Aggiornamenti futuri
-Basta fare push dei nuovi file — GitHub Pages aggiorna automaticamente.
+### Future updates
+Just push the new files — GitHub Pages updates automatically.
 
-## Funzionalità
+## Features
 
-| Feature | Dettagli |
+| Feature | Details |
 |---------|----------|
-| **Viste** | Calendario mensile, Agenda (60 giorni), Focus oggi |
-| **Categorie** | 📚 Studio, 🩺 Salute, 🏋️ Sport, 💡 Altro |
-| **Priorità** | Alta / Media / Bassa |
-| **Ripetizioni** | Giornaliera / Settimanale / Mensile |
-| **Notifiche** | Push del dispositivo + Email (via client locale) |
-| **Shortcuts** | `N` nuovo evento, `T` oggi, `C/A/F` cambia vista |
-| **Backup** | Esporta/importa JSON |
+| **Views** | Monthly calendar, Schedule (60 days), Focus today |
+| **Categories** | 📚 Study, 🩺 Health, 🏋️ Sport, 💡 Other |
+| **Priority** | High / Medium / Low |
+| **Repetition** | Daily / Weekly / Monthly |
+| **Notifications** | Device push + Email (via local client) |
+| **Shortcuts** | `N` new event, `T` today, `C/A/F` switch view |
+| **Backup** | Export/import JSON |
 
-## Notifiche
+## Notifications
 
-### Dispositivo (push)
-- Click "Richiedi permesso notifiche" nella sezione Notifiche
-- Le notifiche vengono triggerate via setTimeout (funziona con tab aperta) o via Service Worker push
+### Device (push)
+- Click "Request notification permission" in the Notifications section
+- Notifications are triggered via setTimeout (works with tab open) or via Service Worker push
 
 ### Email
-- Imposta la tua email in Impostazioni → Notifiche
-- Al momento del promemoria, FocusCal apre il tuo client email locale (mailto:) con il messaggio pre-compilato
-- **Nessun dato viene inviato online**
+- Set your email in Settings → Notifications
+- At the time of the reminder, FocusCal opens your local email client (mailto:) with the pre-filled message
+- **No data is sent online**
 
-## Struttura dati (localStorage)
-
+## Data structure (localStorage)
 ```
-focuscal_events   →  Array di eventi (tutto privato, solo browser)
-focuscal_settings →  Impostazioni (nome, email locale, preferenze notifiche)
-focuscal_scheduled → Promemoria in coda
+focuscal_events   →  Array of events (all private, browser only)
+focuscal_settings →  Settings (name, local email, notification preferences)
+focuscal_scheduled → Queued reminders
 ```
 
 ---
 
-Made with ❤️ — Zero backend, zero tracking, tutto tuo.
+Made with ❤️ — Zero backend, zero tracking, all yours.
