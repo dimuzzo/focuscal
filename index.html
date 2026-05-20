@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="Your personal adaptive calendar — exams, appointments, workouts.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FocusCal">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>FocusCal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand-area">
+      <div class="brand">FocusCal</div>
+      <div class="brand-sub">Yours only · Stays here</div>
+    </div>
+    <nav>
+      <div class="nav-section">
+        <div class="nav-label">Views</div>
+        <button class="nav-btn active" data-view="calendar" onclick="switchView('calendar')">
+          <span class="icon">📅</span> Calendar
+        </button>
+        <button class="nav-btn" data-view="schedule" onclick="switchView('schedule')">
+          <span class="icon">📋</span> Schedule
+        </button>
+        <button class="nav-btn" data-view="focus" onclick="switchView('focus')">
+          <span class="icon">🎯</span> Focus Today
+        </button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Manage</div>
+        <button class="nav-btn" data-view="notifications" onclick="switchView('notifications')">
+          <span class="icon">🔔</span> Notifications
+        </button>
+        <button class="nav-btn" data-view="settings" onclick="switchView('settings')">
+          <span class="icon">⚙️</span> Settings
+        </button>
+      </div>
+    </nav>
+    <div class="sidebar-stats" id="sidebar-stats"></div>
+  </aside>
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <div id="main">
+    <div id="topbar">
+      <button class="btn btn-icon" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+      <h2 id="topbar-title">Calendar</h2>
+      <div class="topbar-actions">
+        <button class="btn" onclick="goToday()">Today</button>
+        <button class="btn primary" onclick="openNewEvent()">+ Event</button>
+      </div>
+    </div>
+    <div class="upcoming-strip" id="upcoming-strip"></div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">New event</h3>
+      <button class="icon-btn" onclick="closeModal('event-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Title</label><input type="text" id="ev-title"></div>
+    <div class="form-group"><label>Category</label><div class="cat-selector">
+      <button class="cat-btn active-studio" data-cat="studio" onclick="selectCat(this,'studio')">📚 Study</button>
+      <button class="cat-btn" data-cat="salute" onclick="selectCat(this,'salute')">🩺 Health</button>
+      <button class="cat-btn" data-cat="sport" onclick="selectCat(this,'sport')">🏋️ Sport</button>
+      <button class="cat-btn" data-cat="altro" onclick="selectCat(this,'altro')">💡 Other</button>
+    </div></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date</label><input type="date" id="ev-date"></div>
+      <div class="form-group"><label>Time (opt.)</label><input type="time" id="ev-time"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Duration (min)</label><input type="number" id="ev-duration"></div>
+      <div class="form-group"><label>Priority</label><select id="ev-priority">
+        <option value="medium">Medium</option><option value="high">High 🔴</option><option value="low">Low</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label>Repeat</label><select id="ev-repeat">
+      <option value="">None</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="monthly">Every month</option>
+    </select></div>
+    <div class="form-group"><label>Notes</label><textarea id="ev-notes"></textarea></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('event-modal')">Cancel</button><button class="btn primary" onclick="saveEvent()">Save</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="detail-title">—</h3><button class="icon-btn" onclick="closeModal('detail-modal')">✕</button></div>
+    <div id="detail-body"></div>
+    <div class="modal-footer"><button class="btn danger" id="detail-delete-btn">🗑 Delete</button><button class="btn" id="detail-edit-btn">✏️ Edit</button><button class="btn primary" onclick="closeModal('detail-modal')">Close</button></div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<script src="script.js"></script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}</script>
+</body>
+</html>
