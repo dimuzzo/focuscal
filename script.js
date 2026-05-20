@@ -45,7 +45,7 @@ function fmtDate(iso){
   return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 }
 function catName(c){return{studio:'📚 Study',salute:'🩺 Health',sport:'🏋️ Sport',altro:'💡 Other'}[c]||c}
-function prioName(p){return{alta:'High 🔴',media:'Medium',bassa:'Low'}[p]||p}
+function prioName(p){return{high:'High 🔴',medium:'Medium',low:'Low'}[p]||p}
 
 function expandEvents(baseEvents,fromDate,toDate){
   const result=[];
@@ -117,10 +117,434 @@ function goToday(){
 }
 
 // ═══════════════════════════════════════════
-//  RENDER FUNCTIONS (Truncated logic for brevity, ensure all strings are in English)
+//  MODAL MANAGEMENT
 // ═══════════════════════════════════════════
-// [Inserisci qui le tue funzioni renderCalendar, renderAgenda, renderFocus, 
-// renderNotifications e renderSettings aggiornando i testi in inglese come fatto sopra]
+function openNewEvent(){
+  editingEventId = null;
+  document.getElementById('modal-title').textContent = "New event";
+  document.getElementById('ev-title').value = "";
+  document.getElementById('ev-date').value = isoDate(selectedDate);
+  document.getElementById('ev-time').value = "";
+  document.getElementById('ev-duration').value = "";
+  document.getElementById('ev-priority').value = "medium";
+  document.getElementById('ev-repeat').value = "";
+  document.getElementById('ev-notes').value = "";
+  selectCat(document.querySelector('.cat-btn'), 'studio');
+  document.getElementById('event-modal').classList.add('open');
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+}
+
+function selectCat(btn, cat){
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.className = "cat-btn";
+  });
+  btn.classList.add('active-' + cat);
+  selectedCat = cat;
+}
+
+// ═══════════════════════════════════════════
+//  RENDER ENGINE
+// ═══════════════════════════════════════════
+function renderView(){
+  updateSidebarStats();
+  renderUpcomingStrip();
+  
+  const content = document.getElementById('content');
+  if(currentView === 'calendar') renderCalendar(content);
+  else if(currentView === 'schedule') renderSchedule(content);
+  else if(currentView === 'focus') renderFocus(content);
+  else if(currentView === 'notifications') renderNotifications(content);
+  else if(currentView === 'settings') renderSettings(content);
+}
+
+function updateSidebarStats(){
+  const statsDiv = document.getElementById('sidebar-stats');
+  const todayEvs = getEventsForDate(isoDate(todayDate));
+  const totalMonth = expandEvents(events, new Date(todayDate.getFullYear(), todayDate.getMonth(), 1), new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0)).length;
+  
+  statsDiv.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-pill"><div class="val">${todayEvs.length}</div><div class="lbl">Today</div></div>
+      <div class="stat-pill"><div class="val">${totalMonth}</div><div class="lbl">This Month</div></div>
+    </div>
+  `;
+}
+
+function renderUpcomingStrip(){
+  const strip = document.getElementById('upcoming-strip');
+  const upcoming = getUpcomingEvents();
+  if(upcoming.length === 0){
+    strip.innerHTML = `<span class="up-label">Upcoming:</span><span class="no-upcoming">No events ahead</span>`;
+    return;
+  }
+  let html = `<span class="up-label">Upcoming:</span>`;
+  upcoming.forEach(e => {
+    html += `
+      <div class="up-chip" onclick="openDetail('${e.id}', '${e.date}')">
+        <div class="chip-dot ${e.category}"></div>
+        <span>${e.title} (${fmtDate(e.date)})</span>
+      </div>
+    `;
+  });
+  strip.innerHTML = html;
+}
+
+function renderCalendar(container){
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Allinea a Lunedì
+  
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const prevTotalDays = new Date(year, month, 0).getDate();
+  
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  
+  let html = `
+    <div class="cal-nav">
+      <button class="btn btn-icon" onclick="changeMonth(-1)">◀</button>
+      <h3>${monthNames[month]} ${year}</h3>
+      <button class="btn btn-icon" onclick="changeMonth(1)">▶</button>
+    </div>
+    <div class="cal-grid-header">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="cal-grid">
+  `;
+  
+  for(let i = startOffset; i > 0; i--){
+    const d = prevTotalDays - i + 1;
+    const dateObj = new Date(year, month - 1, d);
+    html += renderDayCell(dateObj, true);
+  }
+  
+  for(let d = 1; d <= totalDays; d++){
+    const dateObj = new Date(year, month, d);
+    html += renderDayCell(dateObj, false);
+  }
+  
+  const remaining = 42 - (startOffset + totalDays);
+  for(let i = 1; i <= remaining; i++){
+    const dateObj = new Date(year, month + 1, i);
+    html += renderDayCell(dateObj, true);
+  }
+  
+  html += `</div><div class="day-detail" id="day-detail-area"></div>`;
+  container.innerHTML = html;
+  renderDayDetail();
+}
+
+function renderDayCell(dateObj, isOtherMonth){
+  const iso = isoDate(dateObj);
+  const dayNum = dateObj.getDate();
+  const evs = getEventsForDate(iso);
+  
+  let classes = "cal-day";
+  if(isOtherMonth) classes += " other-month";
+  if(iso === isoDate(todayDate)) classes += " today";
+  if(iso === isoDate(selectedDate)) classes += " selected";
+  
+  let dots = '<div class="dots">';
+  evs.forEach(e => { dots += `<div class="dot ${e.category}"></div>`; });
+  dots += '</div>';
+  
+  return `
+    <div class="${classes}" onclick="selectDateCell('${iso}')">
+      <div class="day-num">${dayNum}</div>
+      ${dots}
+    </div>
+  `;
+}
+
+function changeMonth(dir){
+  currentDate.setMonth(currentDate.getMonth() + dir);
+  renderView();
+}
+
+function selectDateCell(iso){
+  selectedDate = new Date(iso + 'T12:00:00');
+  renderView();
+}
+
+function renderDayDetail(){
+  const area = document.getElementById('day-detail-area');
+  if(!area) return;
+  
+  const iso = isoDate(selectedDate);
+  const evs = getEventsForDate(iso);
+  
+  let html = `
+    <div class="day-detail-header">
+      <h3>Events of ${fmtDate(iso)}</h3>
+    </div>
+  `;
+  
+  if(evs.length === 0){
+    html += `<div class="empty"><div class="big">☕</div><p>No events scheduled for this day.</p></div>`;
+  } else {
+    html += `<div class="event-list">`;
+    evs.forEach(e => {
+      const timeStr = e.time ? `🕒 ${e.time}` : '📅 All day';
+      html += `
+        <div class="event-card" onclick="openDetail('${e.id}', '${iso}')">
+          <div class="event-cat ${e.category}"></div>
+          <div class="event-info">
+            <div class="event-title">${e.title} ${e.repeat ? `<span class="repeat-badge">🔁 ${e.repeat}</span>` : ''}</div>
+            <div class="event-meta">${timeStr} · <span class="tag ${e.category}">${catName(e.category)}</span></div>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+  area.innerHTML = html;
+}
+
+function openDetail(id, dateIso){
+  const baseId = id.split('_')[0]; 
+  const ev = events.find(e => e.id === baseId);
+  if(!ev) return;
+  
+  editingEventId = baseId;
+  document.getElementById('detail-title').textContent = ev.title;
+  
+  let bodyHtml = `
+    <div style="margin-bottom:1rem;">
+      <span class="tag ${ev.category}">${catName(ev.category)}</span>
+      <span class="prio"><span class="prio-dot ${ev.priority}"></span>Priority: ${prioName(ev.priority)}</span>
+    </div>
+    <p><strong>Date:</strong> ${fmtDate(dateIso)} ${ev.repeat ? `(Repeats: ${ev.repeat})` : ''}</p>
+    ${ev.time ? `<p><strong>Time:</strong> ${ev.time} ${ev.duration ? `(${ev.duration} min)` : ''}</p>` : ''}
+    ${ev.notes ? `<p style="margin-top:0.75rem; white-space:pre-wrap; color:var(--text2); background:var(--bg2); padding:0.5rem; border-radius:4px;">${ev.notes}</p>` : ''}
+  `;
+  
+  document.getElementById('detail-body').innerHTML = bodyHtml;
+  
+  document.getElementById('detail-delete-btn').onclick = () => { closeModal('detail-modal'); deleteEvent(baseId); };
+  document.getElementById('detail-edit-btn').onclick = () => { closeModal('detail-modal'); triggerEdit(ev); };
+  
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function triggerEdit(ev){
+  editingEventId = ev.id;
+  document.getElementById('modal-title').textContent = "Edit Event";
+  document.getElementById('ev-title').value = ev.title;
+  document.getElementById('ev-date').value = ev.date;
+  document.getElementById('ev-time').value = ev.time || "";
+  document.getElementById('ev-duration').value = ev.duration || "";
+  document.getElementById('ev-priority').value = ev.priority;
+  document.getElementById('ev-repeat').value = ev.repeat || "";
+  document.getElementById('ev-notes').value = ev.notes || "";
+  
+  const targetBtn = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.dataset.cat === ev.category);
+  if(targetBtn) selectCat(targetBtn, ev.category);
+  
+  document.getElementById('event-modal').classList.add('open');
+}
+
+function renderSchedule(container){
+  const from = new Date(todayDate);
+  const to = new Date(todayDate);
+  to.setDate(to.getDate() + 60);
+  
+  const allEvs = expandEvents(events, from, to).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  
+  if(allEvs.length === 0){
+    container.innerHTML = `<div class="empty"><div class="big">📋</div><p>Your schedule is completely empty for the next 60 days.</p></div>`;
+    return;
+  }
+  
+  const groups = {};
+  allEvs.forEach(e => {
+    if(!groups[e.date]) groups[e.date] = [];
+    groups[e.date].push(e);
+  });
+  
+  let html = `<div style="display:flex; flex-direction:column; gap:1.25rem;">`;
+  Object.keys(groups).sort().forEach(dateIso => {
+    const isToday = dateIso === isoDate(todayDate);
+    html += `
+      <div class="agenda-day">
+        <div class="agenda-day-header">
+          <span class="agenda-date-badge ${isToday?'today':''}">${fmtDate(dateIso)}</span>
+        </div>
+        <div class="event-list">
+    `;
+    groups[dateIso].forEach(e => {
+      html += `
+        <div class="event-card" onclick="openDetail('${e.id}', '${dateIso}')">
+          <div class="event-cat ${e.category}"></div>
+          <div class="event-info">
+            <div class="event-title">${e.title}</div>
+            <div class="event-meta">${e.time || 'All day'} · <span class="tag ${e.category}">${catName(e.category)}</span></div>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function renderFocus(container){
+  const todayIso = isoDate(todayDate);
+  const evs = getEventsForDate(todayIso);
+  
+  const cats = ['studio', 'salute', 'sport', 'altro'];
+  let statsHtml = '<div class="progress-section"><h4>Today Progress</h4><div class="progress-cards">';
+  
+  cats.forEach(c => {
+    const total = evs.filter(e => e.category === c).length;
+    statsHtml += `
+      <div class="progress-card ${c}" style="--prog: 100%">
+        <div class="prog-num">${total}</div>
+        <div class="prog-label">${catName(c)}</div>
+      </div>
+    `;
+  });
+  statsHtml += '</div></div>';
+  
+  let listHtml = '<h4>Focus Items</h4><div class="event-list" style="margin-top:0.75rem;">';
+  if(evs.length === 0){
+    listHtml += `<div class="empty"><div class="big">🎯</div><p>Clear mind! No tasks or activities for today.</p></div>`;
+  } else {
+    evs.forEach(e => {
+      listHtml += `
+        <div class="event-card" onclick="openDetail('${e.id}', '${todayIso}')">
+          <div class="event-cat ${e.category}"></div>
+          <div class="event-info">
+            <div class="event-title" style="font-size:1rem; font-weight:600;">${e.title}</div>
+            <div class="event-meta">${e.time || 'All day'} · Priority: ${prioName(e.priority)}</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  listHtml += '</div>';
+  
+  container.innerHTML = statsHtml + listHtml;
+}
+
+function renderNotifications(container){
+  container.innerHTML = `
+    <div class="notif-block">
+      <h4>🔔 Local Push Reminders</h4>
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <div class="tl">In-App Alerts</div>
+          <div class="ts">Triggers via background loops when the application tab is active</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="chk-notify" ${settings.notifyDevice?'checked':''} onchange="updateSettingsField('notifyDevice', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="notif-time-row">
+        <label>Remind me before:</label>
+        <select id="sel-time" onchange="updateSettingsField('notifyBefore', parseInt(this.value))">
+          <option value="15" ${settings.notifyBefore===15?'selected':''}>15 minutes</option>
+          <option value="30" ${settings.notifyBefore===30?'selected':''}>30 minutes</option>
+          <option value="60" ${settings.notifyBefore===60?'selected':''}>1 hour</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="notif-block">
+      <h4>✉️ Desktop Email Client Redirection</h4>
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <div class="tl">Prefill Mailto Link</div>
+          <div class="ts">Triggers your default local client system safely without data tracking</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="chk-email" ${settings.notifyEmail?'checked':''} onchange="updateSettingsField('notifyEmail', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="email-config" style="display: ${settings.notifyEmail?'block':'none'}" id="email-box">
+        <input type="email" id="txt-email" value="${settings.email}" placeholder="yourname@domain.com" onchange="updateSettingsField('email', this.value)">
+      </div>
+    </div>
+  `;
+}
+
+function updateSettingsField(field, value){
+  settings[field] = value;
+  saveSettings(settings);
+  if(field === 'notifyEmail'){
+    document.getElementById('email-box').style.display = value ? 'block' : 'none';
+  }
+  toast('Preferences altered successfully','success');
+}
+
+function renderSettings(container){
+  container.innerHTML = `
+    <div class="settings-section">
+      <h4>Profile Identity</h4>
+      <div class="form-group">
+        <label>Display Owner Name</label>
+        <input type="text" id="cfg-name" value="${settings.name}" placeholder="Anonymous Member" onchange="updateSettingsField('name', this.value)">
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h4>Data Sovereignty Backup</h4>
+      <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.75rem;">Export your dataset onto a flat local JSON or synchronize it backwards.</p>
+      <button class="btn" onclick="exportData()">📤 Download JSON File</button>
+      <button class="btn" onclick="document.getElementById('import-file').click()">📥 Upload backup</button>
+      <input type="file" id="import-file" style="display:none" accept=".json" onchange="importData(this)">
+    </div>
+    
+    <div class="settings-section">
+      <h4 style="color:var(--accent3);">Danger Zone Area</h4>
+      <div class="danger-zone">
+        <p style="font-size:0.82rem; margin-bottom:0.75rem;">Wiping configuration actions are destructive and completely unrecoverable.</p>
+        <button class="btn danger" onclick="purgeSystemData()" style="border-color:var(--accent3); color:var(--accent3);">Wipe Database Instantly</button>
+      </div>
+    </div>
+  `;
+}
+
+function exportData(){
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(events));
+  const dlAnchor = document.createElement('a');
+  dlAnchor.setAttribute("href", dataStr);
+  dlAnchor.setAttribute("download", "focuscal_backup.json");
+  dlAnchor.click();
+}
+
+function importData(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const imported = JSON.parse(e.target.result);
+      if(Array.isArray(imported)){
+        events = imported;
+        saveEvents(events);
+        renderView();
+        toast('Backup synchronized correctly','success');
+      } else { toast('Invalid schema format','error'); }
+    } catch { toast('Corrupted standard integrity','error'); }
+  };
+  reader.readAsText(file);
+}
+
+function purgeSystemData(){
+  if(confirm("Are you sure you want to delete all your private calendar events permanently?")){
+    localStorage.removeItem(STORAGE_KEY);
+    events = [];
+    renderView();
+    toast('System database purged','info');
+  }
+}
 
 // ═══════════════════════════════════════════
 //  SAVE / DELETE EVENTS
