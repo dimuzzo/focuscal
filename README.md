@@ -1,6 +1,8 @@
 # FocusCal 🎯
 
-**Personal adaptive calendar** — university exams, medical appointments, workouts.
+**Personal adaptive calendar** for university exams, medical appointments, workouts.
+
+FocusCal is a lightweight, privacy-focused Progressive Web App (PWA) designed to manage your schedule without the need for servers or databases. Built with a focus on simplicity and user sovereignty, all your data remains securely on your device, ensuring your plans stay private. Whether it's university exams, appointments, or workout routines, FocusCal adapts to your needs with an intuitive, distraction-free interface.
 
 ## Privacy-first
 
