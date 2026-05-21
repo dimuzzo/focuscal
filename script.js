@@ -28,23 +28,32 @@ let settings=loadSettings();
 let currentView='calendar';
 let currentDate=new Date();
 let selectedDate=new Date();
-selectedDate.setHours(0,0,0,0);
+selectedDate.setHours(12,0,0,0);
 let editingEventId=null;
 let selectedCat='studio';
 
-const todayDate=new Date();todayDate.setHours(0,0,0,0);
+const todayDate=new Date();
+todayDate.setHours(12,0,0,0);
 
 // ═══════════════════════════════════════════
 //  UTILS
 // ═══════════════════════════════════════════
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
-function isoDate(d){return d.toISOString().slice(0,10)}
+
+function isoDate(d){
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function sameDay(d1,d2){return isoDate(new Date(d1))===isoDate(new Date(d2))}
+
 function fmtDate(iso){
   const d=new Date(iso+'T12:00:00');
   return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 }
+
 function catName(c){return{studio:'📚 Study',salute:'🩺 Health',sport:'🏋️ Sport',altro:'💡 Other'}[c]||c}
+
 function prioName(p){return{high:'High 🔴',medium:'Medium',low:'Low'}[p]||p}
 
 function expandEvents(baseEvents,fromDate,toDate){
@@ -111,8 +120,9 @@ function closeSidebar(){
 }
 
 function goToday(){
-  currentDate=new Date();
-  selectedDate=new Date();selectedDate.setHours(0,0,0,0);
+  currentDate = new Date();
+  selectedDate = new Date();
+  selectedDate.setHours(12,0,0,0);
   renderView();
 }
 
